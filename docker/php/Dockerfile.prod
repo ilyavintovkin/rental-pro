@@ -1,0 +1,94 @@
+# docker/php/Dockerfile.prod
+FROM php:8.3-fpm-alpine AS build
+
+# Устанавливаем системные зависимости
+RUN apk update && apk add --no-cache \
+    bash \
+    curl \
+    git \
+    libzip-dev \
+    zip \
+    unzip \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    oniguruma-dev \
+    icu-dev \
+    postgresql-dev \
+    autoconf \
+    g++ \
+    make \
+    nodejs \
+    npm \
+    supervisor \
+    linux-headers \
+    sqlite-libs \
+    sqlite-dev \
+    python3
+
+# Устанавливаем расширения PHP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl intl \
+    && docker-php-ext-enable opcache
+
+# Устанавливаем Redis расширение
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
+
+# Устанавливаем Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+WORKDIR /var/www
+
+# Копируем файлы для установки зависимостей
+COPY src/composer.json src/composer.lock ./
+COPY src/package.json src/package-lock.json ./
+
+# Устанавливаем PHP зависимости
+RUN composer install --no-interaction --no-dev --optimize-autoloader
+
+# Устанавливаем Node зависимости и собираем фронтенд
+RUN npm ci --production && npm run build
+
+# Копируем остальной код
+COPY src/ .
+
+# Генерируем ключ (будет перезаписан при первом запуске, но нужно для кэширования)
+RUN php artisan key:generate --no-interaction
+
+# Кэшируем конфигурацию для оптимизации
+RUN php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache
+
+# Финальный образ
+FROM php:8.3-fpm-alpine
+
+# Копируем необходимые расширения
+COPY --from=build /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+COPY --from=build /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
+
+# Копируем приложение
+COPY --from=build --chown=www-data:www-data /var/www /var/www
+
+# Создаем директории для логов и кэша
+RUN mkdir -p /var/www/storage/logs \
+    && mkdir -p /var/www/bootstrap/cache \
+    && mkdir -p /var/www/storage/framework/{sessions,views,cache} \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+WORKDIR /var/www
+
+# Создаем оптимизированный php.ini для продакшена
+RUN echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache.ini
+
+USER www-data
+
+CMD ["php-fpm"]
