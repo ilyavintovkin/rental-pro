@@ -33,7 +33,7 @@
                     <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1 border border-gray-200">
                         <div class="aspect-video overflow-hidden relative">
                             @if($category->image)
-                                <img src="{{ Storage::url($category->image) }}"
+                                <img src="{{$category->image }}"
                                      alt="{{ $category->name }}"
                                      class="w-full h-full object-cover hover:scale-105 transition duration-500">
                             @else

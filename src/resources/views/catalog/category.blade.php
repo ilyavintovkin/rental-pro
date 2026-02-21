@@ -40,7 +40,7 @@
                     <!-- Изображение товара -->
                     <div class="aspect-square overflow-hidden relative">
                         @if($item->main_image)
-                            <img src="{{ Storage::url($item->main_image) }}"
+                            <img src="{{ $category->image }}"
                                  alt="{{ $item->name }}"
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @else
