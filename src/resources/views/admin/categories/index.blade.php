@@ -33,7 +33,8 @@
                             <div class="flex items-center">
                                 @if($category->image)
                                     <div class="h-16 w-16 rounded-lg overflow-hidden mr-3 bg-gray-100 flex items-center justify-center">
-                                        <img src="{{ $category->image }}" alt="{{ $category->name }}"
+                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : Storage::url($category->image) }}"
+                                             alt="{{ $category->name }}">
                                              class="max-h-full max-w-full object-contain">
                                     </div>
                                 @endif

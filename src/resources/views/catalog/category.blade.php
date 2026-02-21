@@ -40,8 +40,8 @@
                     <!-- Изображение товара -->
                     <div class="aspect-square overflow-hidden relative">
                         @if($item->main_image)
-                            <img src="{{ $category->image }}"
-                                 alt="{{ $item->name }}"
+                            <img src="{{ str_starts_with($category->image, 'http') ? $category->image : Storage::url($category->image) }}"
+                                 alt="{{ $category->name }}"
                                  class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         @else
                             <div class="w-full h-full bg-gradient-to-r from-gray-50 to-gray-100 flex items-center justify-center">

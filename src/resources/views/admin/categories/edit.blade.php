@@ -50,7 +50,7 @@
                         @if($category->image)
                             <div class="mb-3">
                                 <p class="text-sm text-gray-600 mb-2">Текущее изображение:</p>
-                                <img src="{{ $category->image }}"
+                                <img src="{{ str_starts_with($category->image, 'http') ? $category->image : Storage::url($category->image) }}"
                                      alt="{{ $category->name }}"
                                      class="max-w-xs rounded-lg shadow">
                             </div>

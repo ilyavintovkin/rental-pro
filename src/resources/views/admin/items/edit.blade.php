@@ -125,8 +125,8 @@
                                     <div>
                                         <p class="text-sm font-medium text-gray-700 mb-2">Текущее изображение</p>
                                         <div class="flex items-center space-x-4">
-                                            <img src="{{ $category->image }}"
-                                                 alt="{{ $item->name }}"
+                                            <img src="{{ str_starts_with($category->image, 'http') ? $category->image : Storage::url($category->image) }}"
+                                                 alt="{{ $category->name }}"
                                                  class="w-24 h-24 object-cover rounded-lg border">
                                             <div class="text-sm text-gray-600">
                                                 <p class="font-medium">Главное изображение</p>
